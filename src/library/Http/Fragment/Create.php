@@ -53,7 +53,7 @@ class Create extends Common
                         );
                         return $res;
                     })()
-                ),
+                )
             )
         );
         return $form;
