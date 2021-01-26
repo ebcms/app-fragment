@@ -33,6 +33,9 @@ class Index extends Common
 
             $fragments[$value['package_name']][] = $value;
         }
+        if (!$fragments[App::getInstance()->getRequestPackage()]) {
+            unset($fragments[App::getInstance()->getRequestPackage()]);
+        }
         return $this->html($template->renderFromFile('fragment@ebcms/fragment', [
             'fragments' => $fragments,
         ]));
