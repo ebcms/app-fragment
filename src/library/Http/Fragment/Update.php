@@ -15,6 +15,7 @@ use Ebcms\FormBuilder\Field\Hidden;
 use Ebcms\FormBuilder\Field\Number;
 use Ebcms\FormBuilder\Field\Text;
 use Ebcms\FormBuilder\Field\Textarea;
+use Ebcms\FormBuilder\Other\Code;
 use Ebcms\FormBuilder\Other\Summernote;
 use Ebcms\FormBuilder\Row;
 use Ebcms\FormBuilder\Summary;
@@ -54,11 +55,9 @@ class Update extends Common
                                 }
                                 break;
                         }
-                        $res[] = (new Textarea('渲染模板', 'template', $data['template'] ?? ''))->set('rows', 5)->set('help', '额外支持$fragment变量，内容类型的还支持$contents');
+                        $res[] = (new Code('渲染模板', 'template', $data['template'] ?? ''))->set('help', '额外支持$fragment变量，内容类型的还支持$contents');
                         if (!$disabled) {
-                            $res[] = (new Summary('其他设置'))->addItem(
-                                (new Textarea('预览模板', 'preview_template', $data['preview_template']))->set('rows', 5)->set('help', '额外支持$fragment $result两个变量')->set('disabled', $disabled)
-                            );
+                            $res[] = (new Code('预览模板(一般使用默认的)', 'preview_template', $data['preview_template']))->set('help', '额外支持$fragment $result两个变量')->set('disabled', $disabled);
                         }
                         return $res;
                     })()

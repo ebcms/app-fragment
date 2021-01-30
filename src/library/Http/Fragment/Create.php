@@ -15,7 +15,9 @@ use Ebcms\FormBuilder\Field\Hidden;
 use Ebcms\FormBuilder\Field\Number;
 use Ebcms\FormBuilder\Field\Text;
 use Ebcms\FormBuilder\Field\Textarea;
+use Ebcms\FormBuilder\Other\Code;
 use Ebcms\FormBuilder\Other\Summernote;
+use Ebcms\FormBuilder\Other\Tab;
 use Ebcms\FormBuilder\Row;
 use Ebcms\FormBuilder\Summary;
 use Ebcms\RequestFilter;
@@ -47,10 +49,8 @@ class Create extends Common
                                 $res[] = (new Textarea('扩展字段', 'fields'))->set('help', '')->set('rows', 5);
                                 break;
                         }
-                        $res[] = (new Textarea('渲染模板', 'template'))->set('rows', 5)->set('help', '额外支持$fragment变量，内容类型的还支持$contents');
-                        $res[] = (new Summary('其他设置'))->addItem(
-                            (new Textarea('预览模板', 'preview_template'))->set('rows', 5)->set('help', '额外支持$fragment $result两个变量')
-                        );
+                        $res[] = (new Code('渲染模板', 'template'))->set('help', '额外支持$fragment变量，内容类型的还支持$contents');
+                        $res[] = (new Code('预览模板(一般使用默认的)', 'preview_template'))->set('help', '额外支持$fragment $result两个变量');
                         return $res;
                     })()
                 )
