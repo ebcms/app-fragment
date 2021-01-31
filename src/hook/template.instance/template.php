@@ -4,12 +4,12 @@ use App\Ebcms\Fragment\Model\Fragment;
 use Ebcms\App;
 use Ebcms\Template;
 
-App::getInstance()->execute(function (
-    Template $template
-) {
-    $template->extend('/\{fragment\s*(.*)\s*[\/]*\}/Ui', function ($matchs) {
-        return '<?php echo tpl_fragment(' . $matchs[1] . ');?>';
-    });
+/**
+ * @var Template $params
+ */
+
+$params->extend('/\{fragment\s*(.*)\s*[\/]*\}/Ui', function ($matchs) {
+    return '<?php echo tpl_fragment(' . $matchs[1] . ');?>';
 });
 
 if (!function_exists('tpl_fragment')) {
