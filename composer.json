@@ -4,11 +4,7 @@
     "type": "ebcms-app",
     "license": "Apache-2.0",
     "require": {
-        "ebcms/framework": "1.*",
-        "ebcms/admin": "^1.0",
-        "ebcms/form-builder": "^1.0",
-        "ebcms/request-filter": "^1.0",
-        "ebcms/database": "^1.0"
+        "ebcms/admin": "^2.0"
     },
     "autoload": {
         "psr-4": {
