@@ -25,7 +25,7 @@ use Ebcms\FormBuilder\Other\SimpleMDE;
 use Ebcms\FormBuilder\Other\Summernote;
 use Ebcms\FormBuilder\Other\TextUpload;
 use Ebcms\FormBuilder\Row;
-use Ebcms\RequestFilter;
+use Ebcms\Request;
 
 class Update extends Common
 {
@@ -33,10 +33,10 @@ class Update extends Common
         Content $contentModel,
         Fragment $fragmentModel,
         Router $router,
-        RequestFilter $input
+        Request $request
     ) {
         $data = $contentModel->get('*', [
-            'id' => $input->get('id', 0, ['intval']),
+            'id' => $request->get('id', 0, ['intval']),
         ]);
 
         if (!$fragment = $fragmentModel->get($data['fragment_id'])) {
@@ -162,27 +162,27 @@ class Update extends Common
         return $this->html($form->__toString());
     }
     public function post(
-        RequestFilter $input,
+        Request $request,
         Fragment $fragmentModel,
         Content $contentModel
     ) {
         if (!$content = $contentModel->get('*', [
-            'id' => $input->post('id'),
+            'id' => $request->post('id'),
         ])) {
             return $this->failure('内容不存在！');
         }
 
-        $update = array_intersect_key($input->post(), [
+        $update = array_intersect_key($request->post(), [
             'title' => '',
             'redirect_uri' => '',
             'description' => '',
             'cover' => '',
         ]);
 
-        $update['extra'] = serialize($input->post('extra'));
+        $update['extra'] = serialize($request->post('extra'));
 
         $contentModel->update($update, [
-            'id' => $input->post('id', 0, ['intval']),
+            'id' => $request->post('id', 0, ['intval']),
         ]);
 
         $fragmentModel->deleteFragmentCache($content['fragment_id']);

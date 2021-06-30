@@ -84,12 +84,12 @@ class Fragment
     {
         switch ($fragment['type']) {
             case 'template':
-                return $this->getTemplate()->renderFromString(html_entity_decode($fragment['template']), [
+                return $this->getTemplate()->renderFromString($fragment['template'], [
                     'fragment' => $fragment
                 ]);
                 break;
             case 'editor':
-                return $this->getTemplate()->renderFromString(html_entity_decode(strlen($fragment['template']) ? $fragment['template'] : '{:htmlspecialchars_decode($fragment[\'content\'] ?? \'\')}'), [
+                return $this->getTemplate()->renderFromString(strlen($fragment['template']) ? $fragment['template'] : '{echo $fragment[\'content\'] ?? \'\'}', [
                     'fragment' => $fragment
                 ]);
                 break;
@@ -99,7 +99,7 @@ class Fragment
                         return $content;
                     });
                 })();
-                return $this->getTemplate()->renderFromString(htmlspecialchars_decode($fragment['template']), [
+                return $this->getTemplate()->renderFromString($fragment['template'], [
                     'fragment' => $fragment,
                     'contents' => $contentModel->select('*', [
                         'fragment_id' => $fragment['id'],

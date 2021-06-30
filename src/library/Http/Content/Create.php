@@ -25,21 +25,21 @@ use Ebcms\FormBuilder\Other\SimpleMDE;
 use Ebcms\FormBuilder\Other\Summernote;
 use Ebcms\FormBuilder\Other\TextUpload;
 use Ebcms\FormBuilder\Row;
-use Ebcms\RequestFilter;
+use Ebcms\Request;
 
 class Create extends Common
 {
     public function get(
         Content $contentModel,
         Fragment $fragmentModel,
-        RequestFilter $input,
+        Request $request,
         Router $router
     ) {
         $data = $contentModel->get('*', [
-            'id' => $input->get('copyfrom')
+            'id' => $request->get('copyfrom')
         ]) ?: [];
 
-        if (!$fragment = $fragmentModel->get($input->get('fragment_id'))) {
+        if (!$fragment = $fragmentModel->get($request->get('fragment_id'))) {
             return $this->failure('碎片不存在！');
         }
 
@@ -47,7 +47,7 @@ class Create extends Common
         $form->addRow(
             (new Row())->addCol(
                 (new Col('col-md-9'))->addItem(
-                    (new Hidden('fragment_id', $input->get('fragment_id'))),
+                    (new Hidden('fragment_id', $request->get('fragment_id'))),
                     (new Text('标题', 'title', $data['title'] ?? ''))->set('help', '一般不超过80个字符')->set('required', 1),
                     (new Url('跳转地址', 'redirect_uri', $data['redirect_uri'] ?? ''))->set('required', 1),
                     (new Textarea('简介', 'description', $data['description'] ?? '')),
@@ -171,27 +171,27 @@ class Create extends Common
     }
 
     public function post(
-        RequestFilter $input,
+        Request $request,
         Fragment $fragmentModel,
         Content $contentModel
     ) {
         $contentModel->update([
             'priority[+]' => 1,
         ], [
-            'fragment_id' => $input->post('fragment_id'),
+            'fragment_id' => $request->post('fragment_id'),
         ]);
         $data = [
-            'fragment_id' => $input->post('fragment_id'),
-            'title' => $input->post('title'),
-            'redirect_uri' => $input->post('redirect_uri'),
-            'description' => $input->post('description'),
-            'cover' => $input->post('cover'),
-            'extra' => serialize($input->post('extra')),
+            'fragment_id' => $request->post('fragment_id'),
+            'title' => $request->post('title'),
+            'redirect_uri' => $request->post('redirect_uri'),
+            'description' => $request->post('description'),
+            'cover' => $request->post('cover'),
+            'extra' => serialize($request->post('extra')),
             'priority' => 0,
         ];
         $contentModel->insert($data);
 
-        $fragmentModel->deleteFragmentCache($input->post('fragment_id'));
+        $fragmentModel->deleteFragmentCache($request->post('fragment_id'));
 
         return $this->success('操作成功！', 'javascript:history.go(-2)');
     }

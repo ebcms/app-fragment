@@ -7,18 +7,18 @@ namespace App\Ebcms\Fragment\Http\Content;
 use App\Ebcms\Admin\Http\Common;
 use App\Ebcms\Fragment\Model\Content;
 use App\Ebcms\Fragment\Model\Fragment;
-use Ebcms\RequestFilter;
+use Ebcms\Request;
 
 class Priority extends Common
 {
     public function post(
-        RequestFilter $input,
+        Request $request,
         Fragment $fragmentModel,
         Content $contentModel
     ) {
-        $type = $input->post('type');
+        $type = $request->post('type');
         $content = $contentModel->get('*', [
-            'id' => $input->post('id'),
+            'id' => $request->post('id'),
         ]);
 
         $contents = $contentModel->select('*', [

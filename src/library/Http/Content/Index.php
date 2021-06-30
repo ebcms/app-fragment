@@ -6,14 +6,14 @@ namespace App\Ebcms\Fragment\Http\Content;
 
 use App\Ebcms\Admin\Http\Common;
 use App\Ebcms\Fragment\Model\Content;
-use Ebcms\RequestFilter;
+use Ebcms\Request;
 use Ebcms\Template;
 
 class Index extends Common
 {
 
     public function get(
-        RequestFilter $input,
+        Request $request,
         Template $template,
         Content $contentModel
     ) {
@@ -23,8 +23,8 @@ class Index extends Common
                 'id' => 'ASC',
             ],
         ];
-        if ($input->get('fragment_id')) {
-            $options['fragment_id'] = $input->get('fragment_id');
+        if ($request->get('fragment_id')) {
+            $options['fragment_id'] = $request->get('fragment_id');
         }
         $data = $contentModel->select('*', $options);
 

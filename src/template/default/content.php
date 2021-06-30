@@ -20,7 +20,7 @@
     }
 </script>
 <div class="my-3">
-    <a href="{:$router->buildUrl('/ebcms/fragment/content/create', ['fragment_id'=>$input->get('fragment_id')])}" class="btn btn-primary">添加</a>
+    <a href="{:$router->buildUrl('/ebcms/fragment/content/create', ['fragment_id'=>$request->get('fragment_id')])}" class="btn btn-primary">添加</a>
 </div>
 <div class="table-responsive">
     <table class="table table-bordered" id="tablexx">

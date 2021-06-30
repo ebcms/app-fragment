@@ -8,21 +8,21 @@ use App\Ebcms\Admin\Http\Common;
 use App\Ebcms\Fragment\Model\Content;
 use App\Ebcms\Fragment\Model\Fragment;
 use Ebcms\App;
-use Ebcms\RequestFilter;
+use Ebcms\Request;
 
 class Delete extends Common
 {
     public function get(
         App $app,
-        RequestFilter $input,
+        Request $request,
         Content $contentModel,
         Fragment $fragmentModel
     ) {
-        $cfg_filename = $app->getAppPath() . '/config/' . $input->get('package_name') . '/fragments.php';
+        $cfg_filename = $app->getAppPath() . '/config/' . $request->get('package_name') . '/fragments.php';
         $fragments = file_exists($cfg_filename) ? (array)include $cfg_filename : [];
-        unset($fragments[$input->get('name')]);
+        unset($fragments[$request->get('name')]);
 
-        $fragment_id = $fragmentModel->getId($input->get('package_name'), $input->get('name'));
+        $fragment_id = $fragmentModel->getId($request->get('package_name'), $request->get('name'));
         $contentModel->delete([
             'fragment_id' => $fragment_id,
         ]);

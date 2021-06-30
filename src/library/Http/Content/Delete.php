@@ -7,20 +7,20 @@ namespace App\Ebcms\Fragment\Http\Content;
 use App\Ebcms\Admin\Http\Common;
 use App\Ebcms\Fragment\Model\Content;
 use App\Ebcms\Fragment\Model\Fragment;
-use Ebcms\RequestFilter;
+use Ebcms\Request;
 
 class Delete extends Common
 {
     public function get(
-        RequestFilter $input,
+        Request $request,
         Fragment $fragmentModel,
         Content $contentModel
     ) {
         $content = $contentModel->get('*', [
-            'id' => $input->get('id'),
+            'id' => $request->get('id'),
         ]);
         $contentModel->delete([
-            'id' => $input->get('id'),
+            'id' => $request->get('id'),
         ]);
         $contents = array_reverse($contentModel->select('*', [
             'fragment_id' => $content['fragment_id'],

@@ -1,9 +1,8 @@
 {include common/header@ebcms/admin}
-<div class="my-4 display-4">碎片</div>
-<hr>
+<div class="my-4 h1">碎片</div>
 <div class="my-3">
     <div class="dropdown">
-        <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             新建
         </button>
         <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">

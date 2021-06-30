@@ -17,17 +17,18 @@ use Ebcms\FormBuilder\Field\Text;
 use Ebcms\FormBuilder\Field\Textarea;
 use Ebcms\FormBuilder\Other\Code;
 use Ebcms\FormBuilder\Other\Summernote;
+use Ebcms\FormBuilder\Other\Tab;
 use Ebcms\FormBuilder\Row;
-use Ebcms\RequestFilter;
+use Ebcms\Request;
 
 class Update extends Common
 {
     public function get(
         Fragment $fragmentModel,
         Router $router,
-        RequestFilter $input
+        Request $request
     ) {
-        $data = $fragmentModel->get($input->get('id'));
+        $data = $fragmentModel->get($request->get('id'));
 
         $disabled = $data['package_name'] != App::getInstance()->getRequestPackage();
         $form = new Builder('更新');
@@ -43,22 +44,22 @@ class Update extends Common
                 ),
                 (new Col('col-md-9'))->addItem(
                     ...(function () use ($data, $router, $disabled): array {
-                        $res = [];
+                        $tab = new Tab();
                         switch ($data['type']) {
                             case 'editor':
-                                $res[] = (new Summernote('内容', 'content', $data['content'] ?? '', $router->buildUrl('/ebcms/admin/upload')));
+                                $tab->addTab('内容', (new Summernote('内容', 'content', $data['content'] ?? '', $router->buildUrl('/ebcms/admin/upload'))));
                                 break;
                             case 'content':
                                 if (!$disabled) {
-                                    $res[] = (new Textarea('扩展字段', 'fields', $data['fields'] ?? ''))->set('help', '')->set('rows', 5)->set('disabled', $disabled);
+                                    $tab->addTab('扩展字段', (new Textarea('扩展字段', 'fields', $data['fields'] ?? ''))->set('help', '')->set('rows', 5)->set('disabled', $disabled));
                                 }
                                 break;
                         }
-                        $res[] = (new Code('渲染模板', 'template', $data['template'] ?? ''))->set('help', '额外支持$fragment变量，内容类型的还支持$contents');
+                        $tab->addTab('渲染模板', (new Code('渲染模板', 'template', $data['template'] ?? ''))->set('help', '额外支持$fragment变量，内容类型的还支持$contents'));
                         if (!$disabled) {
-                            $res[] = (new Code('预览模板(一般使用默认的)', 'preview_template', $data['preview_template'] ?? ''))->set('help', '额外支持$fragment $result两个变量')->set('disabled', $disabled);
+                            $tab->addTab('预览模板', (new Code('预览模板(一般使用默认的)', 'preview_template', $data['preview_template'] ?? ''))->set('help', '额外支持$fragment $result两个变量')->set('disabled', $disabled));
                         }
-                        return $res;
+                        return [$tab];
                     })()
                 )
             )
@@ -67,15 +68,15 @@ class Update extends Common
     }
 
     public function post(
-        RequestFilter $input,
+        Request $request,
         Config $configModel,
         Fragment $fragmentModel
     ) {
-        if (!$fragment = $fragmentModel->get($input->post('id'))) {
+        if (!$fragment = $fragmentModel->get($request->post('id'))) {
             return $this->failure('内容不存在！');
         }
 
-        $update = array_intersect_key($input->post(), [
+        $update = array_intersect_key($request->post(), [
             'type' => '',
             'title' => '',
             'ttl' => '',
@@ -85,17 +86,18 @@ class Update extends Common
             'preview_template' => '',
         ]);
 
-        list($vendor, $name) = explode('/', $input->post('package_name'));
+        list($vendor, $name) = explode('/', $request->post('package_name'));
 
         $data = [
             $vendor => [
                 $name => [
                     'fragments' => [
-                        $input->post('name') => $update,
+                        $request->post('name') => $update,
                     ],
                 ],
             ],
         ];
+
         $configModel->save($data);
 
         $fragmentModel->deleteFragmentCache($fragment['id']);
