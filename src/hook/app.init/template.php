@@ -10,7 +10,6 @@ App::getInstance()->getContainer()->callback(Template::class, function (Template
 <?php
 echo \Ebcms\App::getInstance()->execute(function (
     \Ebcms\Config $config,
-    \Ebcms\Template $template,
     \Psr\SimpleCache\CacheInterface $cache
 ): string {
 str;
@@ -28,13 +27,13 @@ str;
         $fragment = $fragments[$name];
         switch ($fragment['type']) {
             case 'template':
-                $res = $template->renderFromString($fragment['template'], array_merge(['contents'=>[],'content'=>''], $fragment), $id . '(fragment)');
+                $res = \Ebcms\App::getInstance()->getContainer()->get(\Ebcms\Template::class, true)->renderFromString($fragment['template'], array_merge(['contents'=>[],'content'=>''], $fragment), $id . '(fragment)');
                 break;
             case 'editor':
                 $res = $fragment['content'];
                 break;
             case 'content':
-                $res = $template->renderFromString($fragment['template'], array_merge(['contents'=>[],'content'=>''], $fragment), $id . '(fragment)');
+                $res = \Ebcms\App::getInstance()->getContainer()->get(\Ebcms\Template::class, true)->renderFromString($fragment['template'], array_merge(['contents'=>[],'content'=>''], $fragment), $id . '(fragment)');
                 break;
             default:
                 return $default;
