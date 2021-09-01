@@ -5,71 +5,58 @@ declare(strict_types=1);
 namespace App\Ebcms\Fragment\Http\Content;
 
 use App\Ebcms\Admin\Http\Common;
-use App\Ebcms\Fragment\Model\Content;
-use App\Ebcms\Fragment\Model\Fragment;
+use Ebcms\App;
+use Ebcms\Config;
 use Ebcms\Request;
+use Psr\SimpleCache\CacheInterface;
 
 class Priority extends Common
 {
     public function post(
-        Request $request,
-        Fragment $fragmentModel,
-        Content $contentModel
+        App $app,
+        CacheInterface $cache,
+        Config $config,
+        Request $request
     ) {
+
+        $fragments = $config->get('fragments@' . $request->post('package_name'), []);
+        if (!isset($fragments[$request->post('name')])) {
+            return $this->failure('数据不存在~');
+        }
+
         $type = $request->post('type');
-        $content = $contentModel->get('*', [
-            'id' => $request->post('id'),
-        ]);
+        $index = $request->post('index');
+        $fragment = $fragments[$request->post('name')];
+        $contents = array_values($fragment['contents'] ?? []);
+        switch ($type) {
+            case 'up':
+                if ($index <= 0) {
+                    return $this->failure('已经在最顶部了~');
+                }
+                $tmp = $contents[$index];
+                $contents[$index] = $contents[$index - 1];
+                $contents[$index - 1] = $tmp;
+                break;
 
-        $contents = $contentModel->select('*', [
-            'fragment_id' => $content['fragment_id'],
-            'ORDER' => [
-                'priority' => 'DESC',
-                'id' => 'ASC',
-            ],
-        ]);
+            case 'down':
+                if ($index >= count($contents) - 1) {
+                    return $this->failure('已经在最底部了~');
+                }
+                $tmp = $contents[$index];
+                $contents[$index] = $contents[$index + 1];
+                $contents[$index + 1] = $tmp;
+                break;
 
-        $count = $contentModel->count([
-            'fragment_id' => $content['fragment_id'],
-            'id[!]' => $content['id'],
-            'priority[<=]' => $content['priority'],
-            'ORDER' => [
-                'priority' => 'DESC',
-                'id' => 'ASC',
-            ],
-        ]);
-        $change_key = $type == 'up' ? $count + 1 : $count - 1;
-
-        if ($change_key < 0) {
-            return $this->failure('已经是最有一位了！');
+            default:
+                return $this->failure('参数错误~');
+                break;
         }
-        if ($change_key > count($contents) - 1) {
-            return $this->failure('已经是第一位了！');
-        }
-        $contents = array_reverse($contents);
-        foreach ($contents as $key => $value) {
-            if ($key == $change_key) {
-                $contentModel->update([
-                    'priority' => $count,
-                ], [
-                    'id' => $value['id'],
-                ]);
-            } elseif ($key == $count) {
-                $contentModel->update([
-                    'priority' => $change_key,
-                ], [
-                    'id' => $value['id'],
-                ]);
-            } else {
-                $contentModel->update([
-                    'priority' => $key,
-                ], [
-                    'id' => $value['id'],
-                ]);
-            }
-        }
+        $fragment['contents'] = $contents;
+        $fragments[$request->post('name')] = $fragment;
 
-        $fragmentModel->deleteFragmentCache($content['fragment_id']);
+        file_put_contents($app->getAppPath() . '/config/' . $request->post('package_name') . '/fragments.php', '<?php return ' . var_export($fragments, true) . ';');
+
+        $cache->delete(md5('fragment_' . $request->post('name') . '@' . $request->post('package_name')));
 
         return $this->success('操作成功！');
     }

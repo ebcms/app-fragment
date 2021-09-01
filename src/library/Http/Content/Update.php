@@ -5,187 +5,109 @@ declare(strict_types=1);
 namespace App\Ebcms\Fragment\Http\Content;
 
 use App\Ebcms\Admin\Http\Common;
-use App\Ebcms\Fragment\Model\Fragment;
-use App\Ebcms\Fragment\Model\Content;
+use Ebcms\App;
+use Ebcms\Config;
 use Ebcms\Router;
-use LogicException;
 use Ebcms\FormBuilder\Builder;
 use Ebcms\FormBuilder\Col;
-use Ebcms\FormBuilder\Field\Checkbox;
 use Ebcms\FormBuilder\Field\Hidden;
-use Ebcms\FormBuilder\Field\Radio;
-use Ebcms\FormBuilder\Field\Select;
-use Ebcms\FormBuilder\Field\Text;
-use Ebcms\FormBuilder\Field\Textarea;
-use Ebcms\FormBuilder\Field\Url;
-use Ebcms\FormBuilder\Other\Cover;
-use Ebcms\FormBuilder\Other\Files;
-use Ebcms\FormBuilder\Other\Pics;
-use Ebcms\FormBuilder\Other\SimpleMDE;
-use Ebcms\FormBuilder\Other\Summernote;
-use Ebcms\FormBuilder\Other\TextUpload;
 use Ebcms\FormBuilder\Row;
 use Ebcms\Request;
+use LogicException;
+use Psr\SimpleCache\CacheInterface;
 
 class Update extends Common
 {
     public function get(
-        Content $contentModel,
-        Fragment $fragmentModel,
+        Config $config,
         Router $router,
         Request $request
     ) {
-        $data = $contentModel->get('*', [
-            'id' => $request->get('id', 0, ['intval']),
-        ]);
+        $fragments = $config->get('fragments@' . $request->get('package_name'), []);
 
-        if (!$fragment = $fragmentModel->get($data['fragment_id'])) {
-            return $this->failure('碎片不存在！');
+        if (!isset($fragments[$request->get('name')])) {
+            return $this->failure('数据不存在~');
         }
+
+        $fragment = $fragments[$request->get('name')];
+
+        if (!isset($fragment['contents'][$request->get('index')])) {
+            return $this->failure('数据不存在~');
+        }
+
+        $content = $fragment['contents'][$request->get('index')];
 
         $form = new Builder('编辑内容');
         $form->addRow(
             (new Row())->addCol(
                 (new Col('col-md-9'))->addItem(
-                    (new Hidden('id', $data['id'])),
-                    (new Text('标题', 'title', $data['title']))->set('help', '一般不超过80个字符')->set('required', 1),
-                    (new Url('跳转地址', 'redirect_uri', $data['redirect_uri']))->set('required', 1),
-                    (new Textarea('简介', 'description', $data['description'])),
-                    ...(function () use ($router, $fragment, $data): array {
+                    (new Hidden('package_name', $request->get('package_name'))),
+                    (new Hidden('name', $request->get('name'))),
+                    (new Hidden('index', $request->get('index'))),
+                    ...(function () use ($router, $fragment, $content): array {
                         $res = [];
-                        $extra = unserialize($data['extra']);
-                        // 自定义字段
-                        foreach (array_filter(explode(PHP_EOL, htmlspecialchars_decode($fragment['fields'] ?? ''))) as $val) {
-                            $field = [];
-                            foreach (array_filter(explode(';', trim($val))) as $tmp) {
-                                list($k, $v) = explode('=', trim($tmp));
-                                $field[trim($k)] = trim($v);
-                            }
-                            if (!isset($field['name']) || !isset($field['label']) || !isset($field['type'])) {
-                                throw new LogicException('扩展字段每一行的name label type必须设置');
-                            }
-                            switch ($field['type']) {
-                                case 'summernote':
-                                    $field['upload_url'] = $field['upload_url'] ?? $router->buildUrl('/ebcms/admin/upload');
-                                    $tmp = (new Summernote($field['label'], 'extra[' . $field['name'] . ']', $extra[$field['name']] ?? ''));
-                                    break;
-                                case 'simplemde':
-                                    $field['upload_url'] = $field['upload_url'] ?? $router->buildUrl('/ebcms/admin/upload');
-                                    $tmp = (new SimpleMDE($field['label'], 'extra[' . $field['name'] . ']', $extra[$field['name']] ?? ''));
-                                    break;
-                                case 'text':
-                                    $tmp = (new Text($field['label'], 'extra[' . $field['name'] . ']', $extra[$field['name']] ?? ''));
-                                    break;
-                                case 'textarea':
-                                    $tmp = (new Textarea($field['label'], 'extra[' . $field['name'] . ']', $extra[$field['name']] ?? ''));
-                                    break;
-                                case 'cover':
-                                    $field['upload_url'] = $field['upload_url'] ?? $router->buildUrl('/ebcms/admin/upload');
-                                    $tmp = (new Cover($field['label'], 'extra[' . $field['name'] . ']', $extra[$field['name']] ?? ''));
-                                    break;
-                                case 'pics':
-                                    $field['upload_url'] = $field['upload_url'] ?? $router->buildUrl('/ebcms/admin/upload');
-                                    $tmp = (new Pics($field['label'], 'extra[' . $field['name'] . ']', $extra[$field['name']] ?? ''));
-                                    break;
-                                case 'textupload':
-                                    $field['upload_url'] = $field['upload_url'] ?? $router->buildUrl('/ebcms/admin/upload');
-                                    $tmp = (new TextUpload($field['label'], 'extra[' . $field['name'] . ']', $extra[$field['name']] ?? ''));
-                                    break;
-                                case 'files':
-                                    $field['upload_url'] = $field['upload_url'] ?? $router->buildUrl('/ebcms/admin/upload');
-                                    $tmp = (new Files($field['label'], 'extra[' . $field['name'] . ']', $extra[$field['name']] ?? ''));
-                                    break;
-                                case 'radio':
-                                    $field['options'] = (function () use ($field): array {
-                                        $res = [];
-                                        foreach (array_filter(explode('|', $field['options'])) as $value) {
-                                            $res[] = [
-                                                'label' => $value,
-                                                'value' => $value,
-                                            ];
-                                        }
-                                        return $res;
-                                    })();
-                                    $field['inline'] = $field['inline'] ?? 1;
-                                    $tmp = (new Radio($field['label'], 'extra[' . $field['name'] . ']', $extra[$field['name']] ?? ''));
-                                    break;
-                                case 'checkbox':
-                                    $field['options'] = (function () use ($field): array {
-                                        $res = [];
-                                        foreach (array_filter(explode('|', $field['options'])) as $value) {
-                                            $res[] = [
-                                                'label' => $value,
-                                                'value' => $value,
-                                            ];
-                                        }
-                                        return $res;
-                                    })();
-                                    $field['value'] = array_filter(explode('|', $field['value']));
-                                    $field['inline'] = $field['inline'] ?? 1;
-                                    $tmp = (new Checkbox($field['label'], 'extra[' . $field['name'] . ']', $extra[$field['name']] ?? []));
-                                    break;
-                                case 'select':
-                                    $field['options'] = (function () use ($field): array {
-                                        $res = [];
-                                        foreach (array_filter(explode('|', $field['options'])) as $value) {
-                                            $res[] = [
-                                                'label' => $value,
-                                                'value' => $value,
-                                            ];
-                                        }
-                                        return $res;
-                                    })();
-                                    $tmp = (new Select($field['label'], 'extra[' . $field['name'] . ']', $extra[$field['name']] ?? ''));
-                                    break;
+                        foreach (array_filter(explode(PHP_EOL, $fragment['fields'] ?? '')) as $val) {
 
-                                default:
-                                    throw new LogicException('类型' . $field['type'] . '不支持');
-                                    break;
+                            list($field, $type, $help, $ext) = explode(',', trim($val) . ',,,,');
+                            $type = $type ?: 'Input';
+                            $help = $help ?: '';
+                            $ext = $ext ?: '';
+
+                            $field_class = 'Ebcms\\FormBuilder\\Field\\' . $type;
+                            if (!class_exists($field_class)) {
+                                throw new LogicException('类型' . $type . '不支持');
                             }
-                            unset($field['type']);
-                            unset($field['label']);
-                            unset($field['name']);
-                            unset($field['value']);
-                            foreach ($field as $key => $value) {
-                                $tmp->set($key, $value);
+
+                            if (in_array($type, ['Checkbox'])) {
+                                $obj = new $field_class($field, $field . '[]', $content[$field] ?? []);
+                            } else {
+                                $obj = new $field_class($field, $field, $content[$field] ?? '');
                             }
-                            $res[] = $tmp;
+                            $obj->set('help', $help);
+                            $obj->set('upload_url', $router->buildUrl('/ebcms/admin/upload'));
+                            $obj->set('items', array_combine(explode('|', $ext), explode('|', $ext)));
+                            $res[] = $obj;
                         }
                         return $res;
                     })()
                 ),
-                (new Col('col-md-3'))->addItem(
-                    (new Cover('封面图', 'cover', $data['cover'], $router->buildUrl('/ebcms/admin/upload')))
-                )
+                (new Col('col-md-3'))->addItem()
             )
         );
-        return $this->html($form->__toString());
+        return $form;
     }
+
     public function post(
-        Request $request,
-        Fragment $fragmentModel,
-        Content $contentModel
+        App $app,
+        CacheInterface $cache,
+        Config $config,
+        Request $request
     ) {
-        if (!$content = $contentModel->get('*', [
-            'id' => $request->post('id'),
-        ])) {
-            return $this->failure('内容不存在！');
+        $fragments = $config->get('fragments@' . $request->post('package_name'), []);
+
+        if (!isset($fragments[$request->post('name')])) {
+            return $this->failure('数据不存在~');
         }
 
-        $update = array_intersect_key($request->post(), [
-            'title' => '',
-            'redirect_uri' => '',
-            'description' => '',
-            'cover' => '',
-        ]);
+        $fragment = $fragments[$request->post('name')];
 
-        $update['extra'] = serialize($request->post('extra'));
+        if (!isset($fragment['contents'][$request->post('index')])) {
+            return $this->failure('数据不存在~');
+        }
 
-        $contentModel->update($update, [
-            'id' => $request->post('id', 0, ['intval']),
-        ]);
+        $content = $fragment['contents'][$request->post('index')];
 
-        $fragmentModel->deleteFragmentCache($content['fragment_id']);
+        $update = $request->post();
+        unset($update['package_name']);
+        unset($update['name']);
+        unset($update['index']);
+
+        $fragment['contents'][$request->post('index')] = $update;
+        $fragments[$request->post('name')] = $fragment;
+
+        file_put_contents($app->getAppPath() . '/config/' . $request->post('package_name') . '/fragments.php', '<?php return ' . var_export($fragments, true) . ';');
+
+        $cache->delete(md5('fragment_' . $request->post('name') . '@' . $request->post('package_name')));
 
         return $this->success('操作成功！', 'javascript:history.go(-2)');
     }

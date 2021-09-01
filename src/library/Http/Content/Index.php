@@ -5,32 +5,23 @@ declare(strict_types=1);
 namespace App\Ebcms\Fragment\Http\Content;
 
 use App\Ebcms\Admin\Http\Common;
-use App\Ebcms\Fragment\Model\Content;
+use Ebcms\Config;
 use Ebcms\Request;
 use Ebcms\Template;
 
 class Index extends Common
 {
-
     public function get(
         Request $request,
-        Template $template,
-        Content $contentModel
+        Config $config,
+        Template $template
     ) {
-        $options = [
-            'ORDER' => [
-                'priority' => 'DESC',
-                'id' => 'ASC',
-            ],
-        ];
-        if ($request->get('fragment_id')) {
-            $options['fragment_id'] = $request->get('fragment_id');
+        $fragments = $config->get('fragments@' . $request->get('package_name'), []);
+        if (!isset($fragments[$request->get('name')])) {
+            return $this->failure('数据不存在~');
         }
-        $data = $contentModel->select('*', $options);
-
         return $this->html($template->renderFromFile('content@ebcms/fragment', [
-            'data' => $data,
-            'contentModel' => $contentModel
+            'fragment' => $fragments[$request->get('name')]
         ]));
     }
 }

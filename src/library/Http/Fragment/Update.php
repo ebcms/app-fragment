@@ -5,61 +5,60 @@ declare(strict_types=1);
 namespace App\Ebcms\Fragment\Http\Fragment;
 
 use App\Ebcms\Admin\Http\Common;
-use App\Ebcms\Admin\Model\Config;
-use App\Ebcms\Fragment\Model\Fragment;
 use Ebcms\App;
+use Ebcms\Config;
 use Ebcms\Router;
 use Ebcms\FormBuilder\Builder;
 use Ebcms\FormBuilder\Col;
 use Ebcms\FormBuilder\Field\Hidden;
-use Ebcms\FormBuilder\Field\Number;
-use Ebcms\FormBuilder\Field\Text;
+use Ebcms\FormBuilder\Field\Input;
 use Ebcms\FormBuilder\Field\Textarea;
-use Ebcms\FormBuilder\Other\Code;
-use Ebcms\FormBuilder\Other\Summernote;
-use Ebcms\FormBuilder\Other\Tab;
+use Ebcms\FormBuilder\Field\Code;
+use Ebcms\FormBuilder\Field\Cover;
+use Ebcms\FormBuilder\Field\Summernote;
 use Ebcms\FormBuilder\Row;
 use Ebcms\Request;
+use Psr\SimpleCache\CacheInterface;
 
 class Update extends Common
 {
     public function get(
-        Fragment $fragmentModel,
+        Config $config,
         Router $router,
         Request $request
     ) {
-        $data = $fragmentModel->get($request->get('id'));
 
-        $disabled = $data['package_name'] != App::getInstance()->getRequestPackage();
-        $form = new Builder('更新');
+        $fragments = $config->get('fragments@' . $request->get('package_name'), []);
+        if (!isset($fragments[$request->get('name')])) {
+            return $this->failure('数据不存在~');
+        }
+        $fragment = $fragments[$request->get('name')];
+
+        $form = new Builder('编辑');
         $form->addRow(
             (new Row())->addCol(
                 (new Col('col-md-3'))->addItem(
-                    (new Hidden('id', $data['id'])),
-                    (new Hidden('type', $data['type'])),
-                    (new Hidden('package_name', $data['package_name'])),
-                    (new Text('名称', 'name', $data['name']))->set('help', '一般不超过20个字符')->set('required', 1)->set('readonly', $disabled),
-                    (new Text('标题', 'title', $data['title']))->set('help', '一般不超过20个字符')->set('required', 1)->set('disabled', $disabled),
-                    (new Number('缓存周期', 'ttl', $data['ttl']))->set('help', '单位秒')
+                    (new Hidden('package_name', $request->get('package_name'))),
+                    (new Input('名称', 'name', $request->get('name')))->set('help', '一般不超过20个字符')->set('required', 1)->set('attr.readonly', 'readonly'),
+                    (new Cover('截图', 'cover', $fragment['cover'] ?? '', $router->buildUrl('/ebcms/admin/upload'))),
+                    (new Input('缓存周期', 'ttl', $fragment['ttl'] ?? 3600, 'number'))->set('help', '单位秒')
                 ),
                 (new Col('col-md-9'))->addItem(
-                    ...(function () use ($data, $router, $disabled): array {
-                        $tab = new Tab();
-                        switch ($data['type']) {
+                    ...(function () use ($fragment, $router): array {
+                        $res = [];
+                        switch ($fragment['type']) {
                             case 'editor':
-                                $tab->addTab('内容', (new Summernote('内容', 'content', $data['content'] ?? '', $router->buildUrl('/ebcms/admin/upload'))));
+                                $res[] = new Summernote('内容', 'content', $fragment['content'] ?? '', $router->buildUrl('/ebcms/admin/upload'));
                                 break;
                             case 'content':
-                                if (!$disabled) {
-                                    $tab->addTab('扩展字段', (new Textarea('扩展字段', 'fields', $data['fields'] ?? ''))->set('help', '')->set('rows', 5)->set('disabled', $disabled));
-                                }
+                                $res[] = (new Textarea('扩展字段', 'fields', $fragment['fields'] ?? ''))->set('help', "一行一个 格式：字段,类型,帮助文本,其他信息 例如：标题,Input,不超过80个字符 支持的字段类型有：Input,Textarea,Cover,Pics,Upload,Files,Code,Select,Checkbox,Radio等等")->set('attr.rows', 5)->set('attr.spellcheck', "false");
+                                $res[] = (new Code('渲染模板', 'template', $fragment['template'] ?? ''))->set('help', '支持$contents|$content等变量');
+                                break;
+                            case 'template':
+                                $res[] = (new Code('渲染模板', 'template', $fragment['template'] ?? ''))->set('help', '支持$contents|$content等变量');
                                 break;
                         }
-                        $tab->addTab('渲染模板', (new Code('渲染模板', 'template', $data['template'] ?? ''))->set('help', '额外支持$fragment变量，内容类型的还支持$contents'));
-                        if (!$disabled) {
-                            $tab->addTab('预览模板', (new Code('预览模板(一般使用默认的)', 'preview_template', $data['preview_template'] ?? ''))->set('help', '额外支持$fragment $result两个变量')->set('disabled', $disabled));
-                        }
-                        return [$tab];
+                        return $res;
                     })()
                 )
             )
@@ -68,39 +67,28 @@ class Update extends Common
     }
 
     public function post(
+        App $app,
         Request $request,
-        Config $configModel,
-        Fragment $fragmentModel
+        Config $config,
+        CacheInterface $cache
     ) {
-        if (!$fragment = $fragmentModel->get($request->post('id'))) {
-            return $this->failure('内容不存在！');
+        $fragments = $config->get('fragments@' . $request->post('package_name'));
+
+        if (!isset($fragments[$request->post('name')])) {
+            return $this->failure('内容不存在~');
         }
 
-        $update = array_intersect_key($request->post(), [
-            'type' => '',
-            'title' => '',
+        $fragments[$request->post('name')] = array_merge($fragments[$request->post('name')], array_intersect_key($request->post(), [
+            'cover' => '',
             'ttl' => '',
             'template' => '',
             'content' => '',
             'fields' => '',
-            'preview_template' => '',
-        ]);
+        ]));
 
-        list($vendor, $name) = explode('/', $request->post('package_name'));
+        file_put_contents($app->getAppPath() . '/config/' . $request->post('package_name') . '/fragments.php', '<?php return ' . var_export($fragments, true) . ';');
 
-        $data = [
-            $vendor => [
-                $name => [
-                    'fragments' => [
-                        $request->post('name') => $update,
-                    ],
-                ],
-            ],
-        ];
-
-        $configModel->save($data);
-
-        $fragmentModel->deleteFragmentCache($fragment['id']);
+        $cache->delete(md5('fragment_' . $request->post('name') . '@' . $request->post('package_name')));
 
         return $this->success('操作成功！', 'javascript:history.go(-2)');
     }

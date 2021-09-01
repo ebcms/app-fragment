@@ -5,41 +5,32 @@ declare(strict_types=1);
 namespace App\Ebcms\Fragment\Http\Content;
 
 use App\Ebcms\Admin\Http\Common;
-use App\Ebcms\Fragment\Model\Content;
-use App\Ebcms\Fragment\Model\Fragment;
+use Ebcms\App;
+use Ebcms\Config;
 use Ebcms\Request;
+use Psr\SimpleCache\CacheInterface;
 
 class Delete extends Common
 {
     public function get(
+        App $app,
         Request $request,
-        Fragment $fragmentModel,
-        Content $contentModel
+        Config $config,
+        CacheInterface $cache
     ) {
-        $content = $contentModel->get('*', [
-            'id' => $request->get('id'),
-        ]);
-        $contentModel->delete([
-            'id' => $request->get('id'),
-        ]);
-        $contents = array_reverse($contentModel->select('*', [
-            'fragment_id' => $content['fragment_id'],
-            'ORDER' => [
-                'priority' => 'DESC',
-                'id' => 'ASC',
-            ],
-        ]));
-        foreach ($contents as $key => $value) {
-            if ($key != $value['priority']) {
-                $contentModel->update([
-                    'priority' => $key,
-                ], [
-                    'id' => $value['id'],
-                ]);
-            }
+        $fragments = $config->get('fragments@' . $request->get('package_name'), []);
+        if (!isset($fragments[$request->get('name')])) {
+            return $this->failure('数据不存在~');
         }
+        $fragment = $fragments[$request->get('name')];
+        $fragment['contents'] = $fragment['contents'] ?? [];
+        unset($fragment['contents'][intval($request->get('index'))]);
+        $fragment['contents'] = array_values($fragment['contents']);
+        $fragments[$request->get('name')] = $fragment;
 
-        $fragmentModel->deleteFragmentCache($content['fragment_id']);
+        file_put_contents($app->getAppPath() . '/config/' . $request->get('package_name') . '/fragments.php', '<?php return ' . var_export($fragments, true) . ';');
+
+        $cache->delete(md5('fragment_' . $request->get('name') . '@' . $request->get('package_name')));
 
         return $this->success('操作成功！');
     }
