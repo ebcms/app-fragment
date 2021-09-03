@@ -1,16 +1,7 @@
 {include common/header@ebcms/admin}
 <div class="my-4 h1">碎片</div>
-<div class="my-3">
-    <div class="dropdown">
-        <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            新建
-        </button>
-        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-            <a class="dropdown-item" href="{:$router->buildUrl('/ebcms/fragment/fragment/create', ['type'=>'template'])}">模板碎片</a>
-            <a class="dropdown-item" href="{:$router->buildUrl('/ebcms/fragment/fragment/create', ['type'=>'editor'])}">富文本碎片</a>
-            <a class="dropdown-item" href="{:$router->buildUrl('/ebcms/fragment/fragment/create', ['type'=>'content'])}">多内容碎片</a>
-        </div>
-    </div>
+<div class="mb-3">
+    <a class="btn btn-primary" href="{:$router->buildUrl('/ebcms/fragment/fragment/create', ['type'=>'template'])}">新建碎片</a>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/holderjs@2.9.6/holder.min.js"></script>
 {foreach $fragments as $pkg_name => $items}

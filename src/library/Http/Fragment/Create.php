@@ -16,6 +16,7 @@ use Ebcms\FormBuilder\Field\Textarea;
 use Ebcms\FormBuilder\Field\Code;
 use Ebcms\FormBuilder\Field\Cover;
 use Ebcms\FormBuilder\Field\Summernote;
+use Ebcms\FormBuilder\Field\Switchs;
 use Ebcms\FormBuilder\Row;
 use Ebcms\Request;
 use Psr\SimpleCache\CacheInterface;
@@ -37,22 +38,17 @@ class Create extends Common
                     (new Input('缓存周期', 'ttl', 3600))->set('help', '单位秒')->set('attr.type', 'number')
                 ),
                 (new Col('col-md-9'))->addItem(
-                    ...(function () use ($request, $router): array {
-                        $res = [];
-                        switch ($request->get('type')) {
-                            case 'editor':
-                                $res[] = new Summernote('内容', 'content', '', $router->buildUrl('/ebcms/admin/upload'));
-                                break;
-                            case 'content':
-                                $res[] = (new Textarea('扩展字段', 'fields'))->set('help', "一行一个 格式：字段名称,字段类型,帮助文本,其他信息 例如：标题,Input,不超过80个字符 支持的字段类型有：Input,Textarea,Cover,Pics,Upload,Files,Code,Select,Checkbox,Radio等等")->set('attr.rows', 5);
-                                $res[] = (new Code('渲染模板', 'template'))->set('help', '支持$contents|$content等变量');
-                                break;
-                            case 'template':
-                                $res[] = (new Code('渲染模板', 'template'))->set('help', '支持$contents|$content等变量');
-                                break;
-                        }
-                        return $res;
-                    })()
+                    (new Switchs('', 'type', 'editor'))
+                        ->addSwitch('富文本', 'editor', implode('', [
+                            new Summernote('内容', 'content', '', $router->buildUrl('/ebcms/admin/upload')),
+                        ]))
+                        ->addSwitch('模板', 'template', implode('', [
+                            (new Code('渲染模板', 'template'))->set('help', '支持$contents|$content等变量')->set('hide', true)
+                        ]))
+                        ->addSwitch('多内容', 'content', implode('', [
+                            (new Textarea('扩展字段', 'fields'))->set('help', "一行一个 格式：字段名称,字段类型,帮助文本,其他信息 例如：标题,Input,不超过80个字符 支持的字段类型有：Input,Textarea,Cover,Pics,Upload,Files,Code,Select,Checkbox,Radio等等")->set('attr.rows', 5),
+                            (new Code('渲染模板', 'template'))->set('help', '支持$contents|$content等变量')->set('hide', true),
+                        ]))
                 )
             )
         );
