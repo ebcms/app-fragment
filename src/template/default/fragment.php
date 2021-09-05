@@ -11,8 +11,8 @@
     <div class="mb-2">
         <img src="{$vo['cover']??''}" data-src="holder.js/300x200?auto=yes&text=nopic&size=25" class="img-fluid rounded" style="max-width:150px;max-height:150px;" alt="...">
     </div>
-    <div class="text-muted">{$name}</div>
-    <div>
+    <div class="fw-bold text-center">{$name}</div>
+    <div class="text-center bg-light mt-1">
         <a href="{:$router->buildUrl('/ebcms/fragment/fragment/update', ['package_name'=>$pkg_name,'name'=>$name])}">编辑</a>
         {if $pkg_name=='ebcms/fragment'}
         <a href="{:$router->buildUrl('/ebcms/fragment/fragment/delete', ['package_name'=>$pkg_name,'name'=>$name])}" onclick="return confirm('删除后无法恢复，确定删除？');">删除</a>
