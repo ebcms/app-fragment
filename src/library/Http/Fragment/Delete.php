@@ -17,7 +17,7 @@ class Delete extends Common
         CacheInterface $cache
     ) {
         $cfg_filename = $app->getAppPath() . '/config/' . $request->get('package_name') . '/fragments.php';
-        $fragments = file_exists($cfg_filename) ? (array)include $cfg_filename : [];
+        $fragments = is_file($cfg_filename) ? (array)include $cfg_filename : [];
         unset($fragments[$request->get('name')]);
 
         if (!is_dir(dirname($cfg_filename))) {
