@@ -54,7 +54,7 @@ class Create extends Common
                             }
 
                             if (in_array($type, ['Checkbox'])) {
-                                $obj = new $field_class($field, $field . '[]', $content[$field] ?? []);
+                                $obj = new $field_class($field, $field, $content[$field] ?? []);
                             } else {
                                 $obj = new $field_class($field, $field, $content[$field] ?? '');
                             }
